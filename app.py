@@ -43,6 +43,10 @@ engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
 
+@app.route("/login")
+def login():
+    return render_template("login.html")
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -60,7 +64,7 @@ def signin():
     if db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass}).rowcount == 0:
         return render_template("error.html", message="Incorrect username or password")
     
-    return render_template("searchpage.html")
+    return render_template("dashboard.html")
 
 
 #         # Make sure user exists.
@@ -69,16 +73,61 @@ def signin():
 #         # db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
 #         #         {"username": username, "password":hashpass1})
 #         # db.commit()
-#         return render_template("searchpage.html")
+#         return render_template("dashboard.html")
+
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    form = RegistrationForm(request.form)
-    if request.method == 'POST' and form.validate():
+    # form = RegistrationForm(request.form)
+    # if request.method == 'POST' and form.validate():
 
-        # user = User(form.username.data, form.password.data)
-        # db_session.add(user)
-        flash('Thanks for registering please sign in to continue')
-        return redirect(url_for('index'))
+    #     # user = User(form.username.data, form.password.data)
+    #     # db_session.add(user)
+    #     flash('Thanks for registering please sign in to continue')
+    #     return redirect(url_for('index'))
  
-    return render_template('registration.html', form=form)
+    # return render_template('registration.html', form=form)
+
+    try:
+        form = RegistrationForm(request.form)
+
+        if request.method == "POST" and form.validate():
+            username  = form.username.data
+            # password = request.form.get("password") 
+            password = hashlib.md5(request.form.get("password").encode('utf8')).hexdigest()
+            # password = sha256_crypt.encrypt((str(form.password.data)))
+            if db.execute("SELECT * FROM users WHERE username = :username",  {"username": username}).rowcount != 0:
+                flash("That username is already taken, please choose another")
+                return render_template('registration.html', form=form)
+            # c, conn = connection()
+
+            # x = c.execute("SELECT * FROM users WHERE username = (%s)",
+            #                 (thwart(username)))
+
+            # if int(x) > 0:
+            #     flash("That username is already taken, please choose another")
+            #     return render_template('register.html', form=form)
+            # db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
+            #         {"username": username, "password":hashpass1})
+            else:
+                db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
+                    {"username": username, "password":hashpass1})
+                
+                db.commit()
+                flash("Thanks for registering!")
+                # c.close()
+                # conn.close()
+                # gc.collect()
+
+                session['logged_in'] = True
+                session['username'] = username
+
+                return redirect(url_for('dashboard'))
+
+        return render_template("registration.html", form=form)
+
+    except Exception as e:
+        return(str(e))
