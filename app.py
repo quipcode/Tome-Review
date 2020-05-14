@@ -11,24 +11,10 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from flask import Flask
 from flask_bootstrap import Bootstrap
 
-# def create_app():
-#   app = Flask(__name__)
-#   Bootstrap(app)
-
-#   return app
-
-# from flask_wtf import FlaskForm
-# from wtforms import StringField
-# from wtforms.validators import DataRequired
-
-# class MyForm(FlaskForm):
-#     name = StringField('name', validators=[DataRequired()])
-
-# from wtforms import Form, BooleanField, StringField, PasswordField, validators
-# from flask_wtf import Form
-
 from flask_wtf import Form
 from wtforms import TextField, BooleanField, StringField, PasswordField, TextAreaField, validators, SubmitField
+
+
 class RegistrationForm(Form):
     username = StringField('Username', [validators.Length(min=3, max=25)])  
     password = PasswordField('New Password', [
@@ -59,12 +45,7 @@ db = scoped_session(sessionmaker(bind=engine))
 
 @app.route("/")
 def index():
-    # return "Project 1: TODO"
     return render_template("index.html")
-
-# @app.route("/register")
-# def register():
-#     return render_template("registration.html")
 
 @app.route('/signin', methods=["POST"])
 def signin():
@@ -81,25 +62,6 @@ def signin():
     
     return render_template("searchpage.html")
 
-# @app.route('/register', methods=["GET","POST"])
-# def register():
-#     """Register for Tome Review"""
-#     if request.method == 'GET':
-#         return  render_template("registration.html")
-#     else:
-        
-        
-        
-#         # Get form information.
-#         username = request.form.get("username")
-#         password1 = request.form.get("password1")    
-#         password2 = request.form.get("password2")    
-#         hashpass1 = hashlib.md5(password1.encode('utf8')).hexdigest()
-#         hashpass2 = hashlib.md5(password2.encode('utf8')).hexdigest()
-        
-#         # Ensure password values are the same
-#         if hashpass1 != hashpass2:
-#             return render_template("error.html", message="Provide the same password in both password fields")
 
 #         # Make sure user exists.
 #         if db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass1}).rowcount != 0:
@@ -118,5 +80,5 @@ def register():
         # db_session.add(user)
         flash('Thanks for registering please sign in to continue')
         return redirect(url_for('index'))
-    flash('Thanks for registering')
-    return render_template('submit.html', form=form)
+ 
+    return render_template('registration.html', form=form)

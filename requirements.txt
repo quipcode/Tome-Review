@@ -3,3 +3,5 @@ Flask-Session
 psycopg2-binary
 SQLAlchemy
 Flask-WTF
+wtforms
+flask_bootstrap
