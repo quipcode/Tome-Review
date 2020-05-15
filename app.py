@@ -25,6 +25,11 @@ class RegistrationForm(Form):
     confirm = PasswordField('Repeat Password')
     submit = SubmitField('Submit')
 
+class LoginForm(Form):
+    username = StringField('Username', [validators.DataRequired()])  
+    password = PasswordField('Password', [validators.DataRequired()])
+    submit = SubmitField('Submit')
+
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
 app.secret_key ="our little secret"
@@ -45,13 +50,16 @@ db = scoped_session(sessionmaker(bind=engine))
 
 @app.route("/login")
 def login():
-    return render_template("login.html")
+    form = LoginForm(request.form)
+    return render_template("login.html", form=form)
+    
 
 @app.route("/")
 def index():
+    
     return render_template("index.html")
 
-@app.route('/signin', methods=["POST"])
+@app.route('/login', methods=["GET","POST"])
 def signin():
     """Sign into Tome Review"""
     
@@ -63,7 +71,8 @@ def signin():
     # Make sure user exists.
     if db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass}).rowcount == 0:
         return render_template("error.html", message="Incorrect username or password")
-    
+    session['logged_in'] = True
+    session['username'] = request.form['user']
     return render_template("dashboard.html")
 
 
@@ -77,6 +86,8 @@ def signin():
 
 @app.route("/dashboard")
 def dashboard():
+    if 'username' in session:
+        return render_template("dashboard.html", name=session['username'])
     return render_template("dashboard.html")
 
 @app.route('/register', methods=['GET', 'POST'])
