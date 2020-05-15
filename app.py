@@ -2,7 +2,7 @@ import os
 import hashlib
 import requests
 
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, g, session, render_template, request, flash, redirect, url_for
 from flask_session import Session
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -11,24 +11,9 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from flask import Flask
 from flask_bootstrap import Bootstrap
 
-from flask_wtf import Form
-from wtforms import TextField, BooleanField, StringField, PasswordField, TextAreaField, validators, SubmitField
 
-
-class RegistrationForm(Form):
-    username = StringField('Username', [validators.Length(min=3, max=25)])  
-    password = PasswordField('New Password', [
-            validators.DataRequired(),
-            validators.EqualTo('confirm', 
-                            message='Passwords must match')
-            ])
-    confirm = PasswordField('Repeat Password')
-    submit = SubmitField('Submit')
-
-class LoginForm(Form):
-    username = StringField('Username', [validators.DataRequired()])  
-    password = PasswordField('Password', [validators.DataRequired()])
-    submit = SubmitField('Submit')
+# from helpers import login_required
+from forms import RegistrationForm, LoginForm
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -47,42 +32,45 @@ Session(app)
 engine = create_engine(os.getenv("DATABASE_URL"))
 db = scoped_session(sessionmaker(bind=engine))
 
-
-@app.route("/login")
-def login():
-    form = LoginForm(request.form)
-    return render_template("login.html", form=form)
-    
-
 @app.route("/")
 def index():
-    
     return render_template("index.html")
 
 @app.route('/login', methods=["GET","POST"])
-def signin():
+def login():
     """Sign into Tome Review"""
+    form = LoginForm(request.form)
+    # Forget any user_id
+    session.clear()
+    if request.method == "POST":
+        # Get form information.
+        username = request.form.get("username")
+        password = request.form.get("password")    
+        hashpass = hashlib.md5(password.encode('utf8')).hexdigest()
+        
+        # Check database for user:
+        rows = db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass})
+        userLoginRow = rows.fetchone()
+        # Make sure user exists.
+        if rows.rowcount == 0:
+            return render_template("error.html", message="Incorrect username or password")
+        
+        session['logged_in'] = True
+        session["user_id"] = userLoginRow[0]
+        session["username"] = userLoginRow[1]
+        # g.user = {"username": userLoginRow[1]}
+        g.user = userLoginRow[1]
+        return redirect("/dashboard")
     
-    # Get form information.
-    username = request.form.get("username")
-    password = request.form.get("password")    
-    hashpass = hashlib.md5(password.encode('utf8')).hexdigest()
-    
-    # Make sure user exists.
-    if db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass}).rowcount == 0:
-        return render_template("error.html", message="Incorrect username or password")
-    session['logged_in'] = True
-    session['username'] = request.form['user']
-    return render_template("dashboard.html")
+    else:
+        return render_template("login.html", form=form)
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    session['logged_in'] = False
+    return redirect("/")
 
-#         # Make sure user exists.
-#         if db.execute("SELECT * FROM users WHERE username = :username AND password = :password",  {"username": username, "password":hashpass1}).rowcount != 0:
-#             return render_template("error.html", message="That username has been taken")
-#         # db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
-#         #         {"username": username, "password":hashpass1})
-#         # db.commit()
-#         return render_template("dashboard.html")
 
 @app.route("/dashboard")
 def dashboard():
@@ -107,34 +95,23 @@ def register():
 
         if request.method == "POST" and form.validate():
             username  = form.username.data
-            # password = request.form.get("password") 
             password = hashlib.md5(request.form.get("password").encode('utf8')).hexdigest()
-            # password = sha256_crypt.encrypt((str(form.password.data)))
+
             if db.execute("SELECT * FROM users WHERE username = :username",  {"username": username}).rowcount != 0:
                 flash("That username is already taken, please choose another")
                 return render_template('registration.html', form=form)
-            # c, conn = connection()
-
-            # x = c.execute("SELECT * FROM users WHERE username = (%s)",
-            #                 (thwart(username)))
-
-            # if int(x) > 0:
-            #     flash("That username is already taken, please choose another")
-            #     return render_template('register.html', form=form)
-            # db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
-            #         {"username": username, "password":hashpass1})
             else:
-                db.execute("INSERT INTO users (username, password) VALUES (:username, :password)",
-                    {"username": username, "password":hashpass1})
+                rows = db.execute("INSERT INTO users (username, password) VALUES (:username, :password) RETURNING *",
+                    {"username": username, "password":password})
                 
+                userLoginRow = rows.fetchone()
                 db.commit()
                 flash("Thanks for registering!")
-                # c.close()
-                # conn.close()
-                # gc.collect()
+
 
                 session['logged_in'] = True
-                session['username'] = username
+                session["user_id"] = userLoginRow[0]
+                session["username"] = userLoginRow[1]
 
                 return redirect(url_for('dashboard'))
 
