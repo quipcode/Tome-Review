@@ -1,0 +1,76 @@
+
+
+
+{% extends "layout.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}
+    Book  - {{bookInfo[0]['title']}}
+{% endblock %}
+
+
+
+{% block body %}
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+<!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+{% if messages %}
+  {% for category, message in messages %}
+    <div class="alert alert-danger alert-dismissible" role="alert">
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true"></span></button>
+    <!-- <strong>Title</strong> --> {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+{% endwith %}
+    <div class="row book-container">
+        <div class="col-sm-4">
+            <img src="http://covers.openlibrary.org/b/isbn/{{bookInfo[0]['isbn']}}-M.jpg" width="130px">    
+        </div>
+        <div class="col-sm-4">
+            <h2>{{bookInfo[0]['title']}}</h2>
+            <h5>Author: {{bookInfo[0]['author']}}</h5>
+            <h5>Published: {{bookInfo[0]['year']}}</h5>
+            <h5>ISBN-10: {{bookInfo[0]['isbn']}}</h5>
+        </div>
+
+        <!--GOODREADS REVIEWS -->
+        <div class="col-sm-4">
+            <img class="mb-3" src="../static/goodreads.jpg" alt="Goodreads" width="200" height="45">
+            <h5>Nº of Ratings: {{bookInfo[1]['work_ratings_count']}}</h5>
+            <h5>Average Rating: {{bookInfo[1]['average_rating']}}</h5>
+            <h5>
+                <a href="https://www.goodreads.com/search?q={{bookInfo[0]['title']}}" target="blank">Goodreads page</a>
+            </h5>
+        </div>
+    </div>
+    <div class="dropdown-divider"></div>
+
+    <h4 class="alert alert-warning">Users Reviews</h4>
+    <h5>Provide a review</h5>
+
+    <div>
+        <!-- REVIEW FORM -->
+        {{ wtf.quick_form(form) }}
+
+        <hr/>
+        <h5>See other reviews</h5>
+        <!-- REVIEW LIST -->
+        <div id="userReviews">
+            <h2></h2>
+            {% for review in reviews %}
+            <div class="list-group">
+                <a href="#" class="list-group-item list-group-item-action flex-column align-items-start">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1" style="color:burlywood">{{review['username']}} said...</h6>
+                        <small>{{review['time']}}</small>
+                    </div>
+                    <p class="mb-1">{{review['review']}}</p>
+                    <small>Rated: {{review['rating']}}</small>
+                </a>
+                <div class="dropdown-divider"></div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

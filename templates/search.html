@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 {% block title %}
-    Tome Review
+    Search
 {% endblock %}
 
 {% block body %}
@@ -28,7 +28,6 @@
 
   {% for book in books %}
     <div class = "col-sm-4" style="padding-bottom:1em;">
-      <!-- <div class = "col-sm-3"> -->
         <div class="card " style="width:300px;" >
 
         <div class="card-body">
@@ -44,7 +43,7 @@
 
         </div>
       </div>
-    <!-- </div> -->
+    
   {% endfor %}  
 </div>
 
