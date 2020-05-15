@@ -13,7 +13,7 @@ from flask_bootstrap import Bootstrap
 
 
 # from helpers import login_required
-from forms import RegistrationForm, LoginForm
+from forms import RegistrationForm, LoginForm, SearchForm
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
@@ -40,6 +40,7 @@ def index():
 def login():
     """Sign into Tome Review"""
     form = LoginForm(request.form)
+    sform = SearchForm(request.form)
     # Forget any user_id
     session.clear()
     if request.method == "POST":
@@ -60,7 +61,7 @@ def login():
         session["username"] = userLoginRow[1]
         # g.user = {"username": userLoginRow[1]}
         g.user = userLoginRow[1]
-        return redirect("/dashboard")
+        return redirect("/search")
     
     else:
         return render_template("login.html", form=form)
@@ -72,50 +73,60 @@ def logout():
     return redirect("/")
 
 
-@app.route("/dashboard")
-def dashboard():
-    if 'username' in session:
-        return render_template("dashboard.html", name=session['username'])
-    return render_template("dashboard.html")
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # form = RegistrationForm(request.form)
-    # if request.method == 'POST' and form.validate():
-
-    #     # user = User(form.username.data, form.password.data)
-    #     # db_session.add(user)
-    #     flash('Thanks for registering please sign in to continue')
-    #     return redirect(url_for('index'))
- 
-    # return render_template('registration.html', form=form)
-
     try:
         form = RegistrationForm(request.form)
-
         if request.method == "POST" and form.validate():
             username  = form.username.data
             password = hashlib.md5(request.form.get("password").encode('utf8')).hexdigest()
-
             if db.execute("SELECT * FROM users WHERE username = :username",  {"username": username}).rowcount != 0:
                 flash("That username is already taken, please choose another")
                 return render_template('registration.html', form=form)
             else:
                 rows = db.execute("INSERT INTO users (username, password) VALUES (:username, :password) RETURNING *",
                     {"username": username, "password":password})
-                
                 userLoginRow = rows.fetchone()
                 db.commit()
                 flash("Thanks for registering!")
-
-
                 session['logged_in'] = True
                 session["user_id"] = userLoginRow[0]
                 session["username"] = userLoginRow[1]
-
-                return redirect(url_for('dashboard'))
-
+                return redirect(url_for('search'))
         return render_template("registration.html", form=form)
 
     except Exception as e:
         return(str(e))
+
+
+# @app.route("/search")
+# def search():
+#     form = SearchForm(request.form)
+    
+#     return render_template("search.html", form=form)
+
+@app.route('/search', methods=["GET", "POST"])
+def search():
+    form = SearchForm(request.form)
+    if request.method == "POST" and form.validate():
+        query = "%" + form.query.data + "%"
+        # Capitalize all words of input for search
+        # https://docs.python.org/3.7/library/stdtypes.html?highlight=title#str.title
+        query = query.title()
+        # results = db.execute("SELECT * FROM books WHERE \ isbn LIKE :query OR \ title LIKE :query OR \ author LIKE :query RETURNING *", {"query": query})
+        results = db.execute("SELECT isbn, title, author, year FROM books WHERE \
+                        isbn LIKE :query OR \
+                        title LIKE :query OR \
+                        author LIKE :query LIMIT 15 ",
+                        {"query": query})
+       
+        
+        books = results.fetchall()
+        return render_template("search.html", books=books, form=form)
+    if 'username' in session:
+        return render_template("search.html", form=form)
+    else:
+        return redirect("/")
+    
+    

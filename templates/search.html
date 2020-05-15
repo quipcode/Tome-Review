@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-
+{% import "bootstrap/wtf.html" as wtf %}
 {% block title %}
     Tome Review
 {% endblock %}
@@ -12,20 +12,49 @@
   <p style="display: inline;">- logged in as {{ session.username}}</p>
   <hr>
 
-<form action="{{ url_for('index') }}" method="post">
+  <div class="container">
 
-  <div class="form-group">
-      <input class="form-control" name="username" placeholder="Search for a book review">
+      {{ wtf.quick_form(form) }}
+   
   </div>
 
-  <div class="form-group">
-      <button class="btn btn-primary">Search</button>
-  </div>
-    
-</form>
+
 
 <hr>
 <h3 style="display: inline;">Search Results</h3>
+
+<div class="container" >
+<div class = "row" >
+
+  {% for book in books %}
+    <div class = "col-sm-4" style="padding-bottom:1em;">
+      <!-- <div class = "col-sm-3"> -->
+        <div class="card " style="width:300px;" >
+
+        <div class="card-body">
+          <h4 class="card-title">{{book['title']}}</h4>
+          <h6 class="card-text">{{book['author']}}</h6>
+          <h6 class="card-text">{{book['year']}}</h6>
+          <h6 class="card-text">{{book['isbn']}}</h6>
+        </div>
+
+        <div class="card-footer">
+          <a href="/book/{{book['isbn']}}" class="card-link">Go to book page</a>
+        </div>
+
+        </div>
+      </div>
+    <!-- </div> -->
+  {% endfor %}  
+</div>
+
+</div>
+
+
+
+
+
+
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
